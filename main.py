@@ -18,6 +18,13 @@ import webapp2
 import urllib
 import urllib2
 
+def http_post( url ,args):
+    args = urllib.urlencode(args)
+    request = urllib2.Request( url, args )
+    request.add_header('Referer', url)
+    request.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20100101 Firefox/14.0.1')
+    response = urllib2.urlopen(request)
+    return response
 
 def http_get( url ,args):
     args = urllib.urlencode(args)
@@ -25,29 +32,49 @@ def http_get( url ,args):
         url = '%s?%s'%(url,args)
     else:
         url = '%s&%s'%(url,args)
-    request = urllib2.Request( url, args )
+
+    request = urllib2.Request( url )
     request.add_header('Referer', url)
     request.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20100101 Firefox/14.0.1')
     response = urllib2.urlopen(request)
     return response
 
-
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         self.response.write('Hello world!')
 
+class proxyHandler(webapp2.RequestHandler):
+    def get(self):
+        self.response.write("test")
 
 class RequestHandler(webapp2.RequestHandler):
     def get(self):
         reqtype = self.request.get('reqtype')
         url = self.request.get('requrl')
         args = dict(self.request.params)
-        
+
         if args.has_key('requrl'):
             args.pop('requrl')
         if args.has_key('reqtype'):
             args.pop('reqtype')
+
         response = http_get( url, args)
+        if reqtype == 'xml' :
+            self.response.headers["Content-Type"] = "text/xml"
+        else:
+            self.response.headers["Content-Type"] = "text/html"
+        self.response.write(response.read())
+
+    def post(self):
+        reqtype = self.request.get('reqtype')
+        url = self.request.get('requrl')
+        args = dict(self.request.params)
+
+        if args.has_key('requrl'):
+            args.pop('requrl')
+        if args.has_key('reqtype'):
+            args.pop('reqtype')
+        response = http_post( url, args)
         if reqtype == 'xml' :
             self.response.headers["Content-Type"] = "text/xml"
         else:
@@ -56,5 +83,6 @@ class RequestHandler(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
-    ('/request', RequestHandler)
+    ('/request', RequestHandler),
+    ('/r', proxyHandler)
 ], debug=True)
