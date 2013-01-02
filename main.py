@@ -19,12 +19,13 @@ import urllib
 import urllib2
 
 
-def http_get( url, args = None ):
-    if args :
-        args = urllib.urlencode(args)
-        request = urllib2.Request( url, args )
+def http_get( url ,args):
+    args = urllib.urlencode(args)
+    if url.find('?') == -1 :
+        url = '%s?%s'%(url,args)
     else:
-        request = urllib2.Request( url )
+        url = '%s&%s'%(url,args)
+    request = urllib2.Request( url, args )
     request.add_header('Referer', url)
     request.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; rv:14.0) Gecko/20100101 Firefox/14.0.1')
     response = urllib2.urlopen(request)
@@ -41,6 +42,7 @@ class RequestHandler(webapp2.RequestHandler):
         reqtype = self.request.get('reqtype')
         url = self.request.get('requrl')
         args = dict(self.request.params)
+        
         if args.has_key('requrl'):
             args.pop('requrl')
         if args.has_key('reqtype'):
