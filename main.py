@@ -20,6 +20,10 @@ import urllib2
 from google.appengine.api import urlfetch
 from bs4 import BeautifulSoup
 #import BeautifulSoup
+import logging
+from webapp2_extras import routes
+
+
 
 def getBaseUri(uri):
     idx = uri.rfind('/')
@@ -79,6 +83,14 @@ class MainHandler(webapp2.RequestHandler):
     def get(self):
         url = self.request.get('rq')
         if not url :
+            self.response.write(self.request.url)
+            self.response.write("<br>")
+            self.response.write(self.request.host_url)
+            self.response.write("<br>")
+            self.response.write(self.request.path_qs)
+            self.response.write("<br>")
+            originDomain = self.request.host_url.replace('.relay-request.appspot.com','')
+            self.response.write('%s%s'%(originDomain,self.request.path_qs))
             self.response.write('URL:<form action=/><input type=text name=rq value=http://></form>')
             return
 
@@ -120,7 +132,6 @@ class MainHandler(webapp2.RequestHandler):
             return
         self.response.write(convertURL(response.content,url))
 
-
 class proxyHandler(webapp2.RequestHandler):
     def get(self):
         url = self.request.get('rq')
@@ -135,7 +146,8 @@ class proxyHandler(webapp2.RequestHandler):
 
         response = urlfetch.fetch(url=url, 
                                   method=urlfetch.GET,
-                                  headers=self.request.headers)
+                                  headers=self.request.headers,
+                                  deadline=10)
 
         self.response.headers = response.headers
         self.response.write(response.content)
@@ -149,12 +161,22 @@ class proxyHandler(webapp2.RequestHandler):
         response = urlfetch.fetch(url=url, 
                                   payload=args, 
                                   method=urlfetch.POST,
-                                  headers=self.request.headers)
+                                  headers=self.request.headers,
+                                  deadline=10)
 
         self.response.headers = response.headers
         self.response.write(response.content)
 
+
+class testHandler(webapp2.RequestHandler):
+    def get(self):
+        logging.info('test')
+        logging.info(self.request)
+        self.response.write("test...")
+        self.response.write(dir(self.request))
+
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
-    ('/r', proxyHandler)
+    ('/r', proxyHandler),
+    ('/test', testHandler)
 ], debug=True)
